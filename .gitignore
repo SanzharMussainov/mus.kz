@@ -1,0 +1,17 @@
+.venv/
+__pycache__/
+.pytest_cache/
+.env
+.env.*
+!.env.example
+.idea/
+*.db
+*.db-*
+*.sqlite
+*.sqlite3
+*.dump
+*.tar
+storage/
+backups/
+.local-postgres/
+*.log

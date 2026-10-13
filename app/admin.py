@@ -1,0 +1,25 @@
+"""Explicit editable fields; never bind arbitrary request keys to ORM models."""
+from .models import *
+
+# key, Russian label, input type (or enum), relation model when applicable
+def f(key, label, kind='text', relation=None):
+    return (key, label, kind, relation)
+
+SPECS = {
+ 'students': (User, 'Ученики', [f('name','Имя'),f('email','Email','email'),f('password','Новый пароль (минимум 10 символов)','password'),f('phone','Телефон WhatsApp'),f('parent_contact','Контакт родителя'),f('active','Активен','checkbox')]),
+ 'courses': (Course,'Курсы',[f('title','Название'),f('description','Описание','textarea'),f('direction','Направление'),f('grade','Класс','number'),f('level','Уровень'),f('public','Показывать на сайте','checkbox')]),
+ 'topics': (Topic,'Темы',[f('course_id','Курс','select',Course),f('title','Название'),f('position','Порядок','number')]),
+ 'lessons': (Lesson,'Уроки',[f('topic_id','Тема','select',Topic),f('title','Название'),f('content','Материал урока (формулы: \\(x^2\\))','textarea'),f('position','Порядок','number')]),
+ 'groups': (Group,'Группы',[f('title','Название'),f('course_id','Курс','select',Course),f('schedule','Регулярное расписание (описание)','textarea'),f('starts_at','Начало обучения','datetime-local'),f('ends_at','Конец обучения','datetime-local'),f('status','Статус','recruiting|active|archived')]),
+ 'memberships': (Membership,'Состав групп',[f('group_id','Группа','select',Group),f('user_id','Ученик','select',User),f('active','Состоит в группе','checkbox')]),
+ 'access': (CourseAccess,'Доступ к курсам',[f('course_id','Курс','select',Course),f('user_id','Ученик','select',User),f('active','Доступ открыт','checkbox')]),
+ 'tasks': (Task,'Банк заданий',[f('title','Название'),f('prompt','Условие; формулы: \\(x^2\\)','textarea'),f('kind','Тип ответа','single|multiple|number|fraction|set'),f('options','Варианты: каждый с новой строки','textarea'),f('answer','Правильный ответ (несколько: через ;)'),f('tolerance','Погрешность'),f('ordered','Порядок ответов важен','checkbox'),f('exact_form','Точная форма дроби','checkbox'),f('solution','Решение','textarea'),f('grade','Класс','number'),f('topic','Тема'),f('difficulty','Сложность'),f('status','Статус','draft|ready')]),
+ 'templates': (HomeworkTemplate,'Шаблоны работ',[f('title','Название'),f('task_ids','Номера заданий в нужном порядке, через запятую')]),
+ 'assignments': (Assignment,'Выдачи работ',[f('title','Название'),f('group_id','Группа','select',Group),f('template_id','Шаблон','select',HomeworkTemplate),f('opens_at','Открытие','datetime-local'),f('deadline','Дедлайн','datetime-local'),f('solutions_at','Открытие решений (после этого ответы не принимаются)','datetime-local'),f('allow_late','Принимать после дедлайна до открытия решений','checkbox'),f('max_attempts','Попыток на задание','number'),f('status','Публикация','draft|published|hidden')]),
+ 'meetings': (Meeting,'Занятия и события',[f('title','Название'),f('description','Описание и темы','textarea'),f('group_id','Группа (для обычного занятия)','optional-select',Group),f('is_event','Дополнительное событие: нужна запись','checkbox'),f('audience','Аудитория событий','all|selected'),f('audience_groups','Номера групп аудитории, через запятую'),f('audience_users','Номера учеников аудитории, через запятую'),f('public','Публичное событие','checkbox'),f('starts_at','Начало','datetime-local'),f('duration','Плановая длительность, минут','number'),f('meet_url','Ссылка Google Meet','url'),f('material','Материалы и комментарий','textarea'),f('payment_mode','Оплата','subscription|separate|free'),f('cancel_until','Отменить запись до (по умолчанию до начала)','datetime-local')]),
+ 'leads': (Lead,'Заявки',[f('name','Имя'),f('contact','Контакт'),f('message','Сообщение','textarea'),f('status','Статус','new|contacted|enrolled|closed')]),
+ 'settings': (Settings,'Информация сайта',[f('title','Название сайта'),f('headline','Заголовок'),f('about','Об обучении','textarea'),f('teacher','О преподавателе','textarea'),f('contact','Контакты'),f('whatsapp','WhatsApp: только цифры, с кодом страны')]),
+}
+
+LABELS = {'single':'Один вариант','multiple':'Несколько вариантов','number':'Число','fraction':'Дробь','set':'Набор чисел','draft':'Черновик','ready':'Готово','published':'Опубликовано','hidden':'Скрыто','recruiting':'Идёт набор','active':'Активна','archived':'Архив','all':'Все ученики','selected':'Выбранные группы и ученики','subscription':'Из абонемента','separate':'Отдельная оплата','free':'Бесплатно','scheduled':'Запланировано','held':'Проведено','cancelled':'Отменено','present':'Присутствовал','warned':'Пропуск с предупреждением','absent':'Пропуск без предупреждения','trial':'Бесплатное пробное','new':'Новая','contacted':'Связались','enrolled':'Зачислен','closed':'Закрыта','payment':'Оплата','charge':'Списание','refund':'Возврат','adjustment':'Корректировка','attendance_correction':'Изменение посещаемости'}
+LABELS.update({'admin:registered':'Добавлен преподавателем','admin:cancelled':'Снят преподавателем','student:registered':'Ученик записался','student:cancelled':'Ученик отменил запись','paid':'Оплата подтверждена','payment_revoked':'Отметка оплаты отменена'})
