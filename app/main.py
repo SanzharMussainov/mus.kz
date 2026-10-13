@@ -90,7 +90,7 @@ def localdate(value):
 
 @app.get('/')
 def home(request: Request, db=Depends(get_db)):
-    return render(request, db, 'home.html', public_only=True, courses=db.scalars(select(Course).where(Course.public == True)).all(), groups=db.scalars(select(Group).where(Group.status == 'recruiting')).all(), events=db.scalars(select(Meeting).where(Meeting.is_event == True, Meeting.public == True, Meeting.status == 'scheduled', Meeting.starts_at > now()).order_by(Meeting.starts_at)).all())
+    return render(request, db, 'home.html', public_only=True, courses=db.scalars(select(Course).where(Course.public == True)).all(), groups=db.scalars(select(Group).where(Group.status == 'recruiting', Group.course_id.in_(select(Course.id).where(Course.public == True)))).all(), events=db.scalars(select(Meeting).where(Meeting.is_event == True, Meeting.public == True, Meeting.status == 'scheduled', Meeting.starts_at > now()).order_by(Meeting.starts_at)).all())
 
 
 @app.post('/apply')
@@ -207,7 +207,14 @@ async def admin_save(section:str,pk:str,request:Request,db=Depends(get_db)):
         if not obj.opens_at <= obj.deadline <= obj.solutions_at or not 1<=obj.max_attempts<=100: raise ValueError('Проверьте даты и количество попыток (1–100).')
         if obj.status=='published': publish(db,obj)
     if isinstance(obj,Group) and obj.starts_at and obj.ends_at and obj.starts_at>obj.ends_at: raise ValueError('Конец обучения раньше начала.')
+    if isinstance(obj,Group):
+        if obj.hourly_price is not None and obj.hourly_price < 0: raise ValueError('Стоимость не может быть отрицательной.')
+        if any(n is not None and n < 1 for n in (obj.min_students,obj.max_students)): raise ValueError('Размер группы должен быть положительным.')
+        if obj.min_students and obj.max_students and obj.min_students > obj.max_students: raise ValueError('Минимум учеников больше максимума.')
+        if obj.meet_url and not re.fullmatch(r'https://meet\.google\.com/[a-zA-Z0-9-]+',obj.meet_url): raise ValueError('Используйте ссылку https://meet.google.com/… без служебных параметров.')
     if isinstance(obj,Meeting):
+        if obj.group_id and not obj.is_event and not obj.meet_url:
+            obj.meet_url=db.get(Group,obj.group_id).meet_url or ''
         if not 1<=obj.duration<=1440: raise ValueError('Длительность: 1–1440 минут.')
         if obj.meet_url and not re.fullmatch(r'https://meet\.google\.com/[a-zA-Z0-9-]+',obj.meet_url): raise ValueError('Используйте ссылку https://meet.google.com/…')
         if obj.cancel_until and obj.cancel_until>obj.starts_at: raise ValueError('Срок отмены должен быть не позже начала.')

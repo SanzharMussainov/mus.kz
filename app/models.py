@@ -54,6 +54,10 @@ class Group(Base):
     starts_at: Mapped[datetime | None] = mapped_column(UTCDateTime, nullable=True)
     ends_at: Mapped[datetime | None] = mapped_column(UTCDateTime, nullable=True)
     status: Mapped[str] = mapped_column(String(20), default='recruiting')
+    hourly_price: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    min_students: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    max_students: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    meet_url: Mapped[str | None] = mapped_column(String(500), nullable=True)
 
 
 class Membership(Base):
