@@ -16,3 +16,5 @@ backups/
 .local-postgres/
 .local-setup/
 *.log
+
+dist-public/
