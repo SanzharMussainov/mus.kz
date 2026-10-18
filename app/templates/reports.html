@@ -1,0 +1,15 @@
+{% extends 'base.html' %}{% block content %}
+<p class="eyebrow">МОЁ ОБУЧЕНИЕ</p><h1>Недельные отчёты</h1>
+<p class="lead">Темы занятий, на которых ученик присутствовал. Отчёт обновляется после отметки посещаемости и уточнения тем преподавателем.</p>
+<form method="get" class="card form report-filter">
+{% if user.role=='admin' %}<label>Ученик<select name="student">{% for u in students %}<option value="{{u.id}}" {% if target and u.id==target.id %}selected{% endif %}>{{u.name}}</option>{% endfor %}</select></label>{% endif %}
+<label>Любой день нужной недели<input type="date" name="week" value="{{report.start if report else ''}}" required></label><button>Показать неделю</button></form>
+{% if target and report %}<h2>{{target.name}} · {{report.label}}</h2>
+<div class="actions"><a href="/reports?student={{target.id}}&week={{report.previous}}">← Предыдущая неделя</a><a href="/reports?student={{target.id}}">Текущая неделя</a><a href="/reports?student={{target.id}}&week={{report.following}}">Следующая →</a></div>
+<div class="stats"><div><span>Посещено занятий</span><strong>{{report.attended}}</strong></div><div><span>Время на занятиях</span><strong class="stat-balance">{{report.minutes|minutes}}</strong></div><div><span>Тем изучали</span><strong>{{report.topics|length}}</strong></div></div>
+{% if report.current %}<p class="muted">Текущая неделя ещё продолжается.</p>{% endif %}
+<article class="card"><h2>Что изучали</h2>{% for topic in report.topics %}<p>✓ {{topic}}</p>{% else %}<p>За эту неделю пока нет отмеченных тем посещённых занятий.</p>{% endfor %}{% if report.missing %}<p class="notice">Темы для {{report.missing}} посещённых занятий ещё не заполнены.</p>{% endif %}</article>
+<h2>Занятия за неделю</h2>{% for m,a in report.rows %}<article class="list-row"><span><strong>{{m.title}}</strong><small>{{m.starts_at|date}} · {{a.status|label}} · {{m.actual_duration}} мин</small>{% if a.status in ['present','trial'] %}<p class="prewrap">{{m.covered_topics or 'Темы уточняются.'}}</p>{% else %}<p class="muted">Не включено в изученные темы.</p>{% endif %}{% if user.role=='admin' %}<a href="/meetings/{{m.id}}">Уточнить темы и посещаемость →</a>{% endif %}</span></article>{% else %}<p>Нет подтверждённых занятий за эту неделю.</p>{% endfor %}
+<p class="muted">Отчёт показывает посещение и пройденные темы, а не оценку усвоения материала. Неделя: понедельник–воскресенье, Asia/Qyzylorda.</p>
+{% if user.role=='admin' %}<a class="button" href="/messages?student={{target.id}}&week={{report.start}}">Подготовить сообщение с отчётом →</a>{% endif %}
+{% else %}<p>Сначала добавьте ученика.</p>{% endif %}{% endblock %}

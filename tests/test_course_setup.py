@@ -1,5 +1,5 @@
 from sqlalchemy import select,func
-from app.models import Course,Group,Meeting,Task
+from app.models import Course,Group,Meeting
 from app.setup_course import configure
 from conftest import login,token
 
@@ -19,7 +19,6 @@ def test_owner_setup_no_invented_dates_or_lessons(db,client):
     assert db.scalar(select(func.count()).select_from(Course))==1
     assert db.scalar(select(func.count()).select_from(Group))==1
     assert db.scalar(select(func.count()).select_from(Meeting))==0
-    assert db.scalar(select(func.count()).select_from(Task))==0
     page=client.get('/').text
     assert '3500' in page and '2–8' in page
     assert 'abc-defg-hij' not in page

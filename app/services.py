@@ -1,7 +1,6 @@
 from sqlalchemy import select, func
 from .models import *
 from .db import now
-from .grading import check
 
 
 def ids(value):
@@ -12,7 +11,7 @@ def ids(value):
 
 
 def lock(db, model, pk):
-    obj = db.scalar(select(model).where(model.id == pk).with_for_update())
+    obj = db.scalar(select(model).where(model.id == pk).with_for_update().execution_options(include_deleted=model==User))
     if obj is None:
         raise ValueError('Запись не найдена.')
     return obj
@@ -24,52 +23,13 @@ def group_ids(db, user_id):
 
 def course_ids(db, user_id):
     groups = group_ids(db, user_id)
-    return set(db.scalars(select(Group.course_id).where(Group.id.in_(groups)))) | set(db.scalars(select(CourseAccess.course_id).where(CourseAccess.user_id == user_id, CourseAccess.active == True)))
+    return set(db.scalars(select(Group.course_id).where(Group.id.in_(groups))))
 
 
-def accessible(db, assignment, user_id, at=None):
-    return assignment.group_id in group_ids(db, user_id) and assignment.status == 'published' and assignment.opens_at <= (at or now())
 
 
-def publish(db, assignment):
-    if not assignment.snapshot:
-        template = db.get(HomeworkTemplate, assignment.template_id)
-        task_ids = ids(template.task_ids)
-        if not task_ids or len(task_ids) != len(set(task_ids)):
-            raise ValueError('Шаблон должен содержать неповторяющиеся задания.')
-        snapshot = []
-        for pk in task_ids:
-            t = db.get(Task, pk)
-            if not t or t.status != 'ready':
-                raise ValueError(f'Задание №{pk} отсутствует или не готово.')
-            item = {c.name: getattr(t, c.name) for c in Task.__table__.columns}
-            check(item, item['answer'])
-            item['file_ids'] = list(db.scalars(select(File.id).where(File.task_id == t.id)))
-            snapshot.append(item)
-        assignment.snapshot = snapshot
-    assignment.status = 'published'
 
 
-def submit(db, assignment_id, user_id, task_index, value, at=None):
-    at = at or now()
-    # Serializes submissions for this issuance, also enforcing the attempt limit.
-    a = lock(db, Assignment, assignment_id)
-    if not accessible(db, a, user_id, at):
-        raise ValueError('Работа пока недоступна.')
-    if at >= a.solutions_at:
-        raise ValueError('Приём ответов завершён: решения уже открыты.')
-    if at > a.deadline and not a.allow_late:
-        raise ValueError('Срок сдачи истёк.')
-    if not 0 <= task_index < len(a.snapshot):
-        raise ValueError('Задание не найдено.')
-    count = db.scalar(select(func.count()).select_from(Attempt).where(Attempt.user_id == user_id, Attempt.assignment_id == a.id, Attempt.task_index == task_index))
-    if count >= a.max_attempts:
-        raise ValueError('Попытки закончились.')
-    correct = check(a.snapshot[task_index], value)
-    attempt = Attempt(user_id=user_id, assignment_id=a.id, task_index=task_index, number=count+1, answer=value, correct=correct, late=at > a.deadline, created_at=at)
-    db.add(attempt)
-    db.flush()
-    return attempt
 
 
 def balance(db, user_id):
@@ -85,6 +45,8 @@ def registration(db, meeting_id, user_id):
 
 
 def meeting_access(db, m, user_id):
+    if db.scalar(select(Attendance.id).where(Attendance.meeting_id == m.id, Attendance.user_id == user_id)):
+        return True
     r = registration(db, m.id, user_id)
     if m.is_event:
         return eligible(db, m, user_id) or bool(r)
@@ -198,7 +160,8 @@ def payment_notice(db, user_id):
 
 def refresh_notice(db, user_id):
     if not payment_notice(db, user_id):
-        db.get(User, user_id).payment_requested = False
+        user=db.scalar(select(User).where(User.id==user_id).execution_options(include_deleted=True))
+        if user: user.payment_requested = False
 
 
 def payment(db, user_id, minutes, amount, reason, at=None, adjustment=False):

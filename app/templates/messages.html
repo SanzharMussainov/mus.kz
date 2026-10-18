@@ -1,0 +1,8 @@
+{% extends 'base.html' %}{% block content %}
+<p class="eyebrow">СВЯЗЬ С УЧЕНИКАМИ И РОДИТЕЛЯМИ</p><h1>Подготовить сообщение</h1>
+<p class="lead">Выберите ученика, проверьте текст и скопируйте его. Сообщения автоматически не отправляются.</p>
+<form method="get" class="card form report-filter"><label>Ученик<select name="student">{% for u in students %}<option value="{{u.id}}" {% if target and u.id==target.id %}selected{% endif %}>{{u.name}}</option>{% endfor %}</select></label><label>Неделя отчёта<input type="date" name="week" value="{{week}}" required></label><button>Подставить данные</button></form>
+<p><a href="/admin/messages">Редактировать шаблоны →</a></p>
+{% if target %}<p>Ученик: {{target.phone or 'телефон не указан'}} · Контакт родителя: {{target.parent_contact or 'не указан'}}</p>
+<div class="cards">{% for template,text in messages %}<article class="card"><h2>{{template.title}}</h2><textarea id="prepared-{{template.id}}" rows="10" aria-label="{{template.title}}">{{text}}</textarea><button class="outline small" data-copy="prepared-{{template.id}}">Копировать текст</button><p class="muted">Можно исправить текст перед копированием.</p></article>{% else %}<p>Добавьте первый шаблон.</p>{% endfor %}</div>
+{% else %}<p>Сначала добавьте ученика.</p>{% endif %}{% endblock %}

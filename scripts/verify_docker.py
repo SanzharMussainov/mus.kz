@@ -61,7 +61,7 @@ def main():
         if restored!=baseline:
             raise RuntimeError('Restored database or attachments do not match the original.')
         report.update(status='passed',comparison=restored)
-        print('PASS: balance 390 minutes, 5 correct answers, attachment bytes, all table fingerprints and authenticated download match.',flush=True)
+        print('PASS: balance 390 minutes, weekly report, legacy attachment bytes, all table fingerprints and authenticated download match.',flush=True)
     except Exception as error:
         report.update(status='failed',error_type=type(error).__name__)
         raise

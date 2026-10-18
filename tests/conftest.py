@@ -41,10 +41,8 @@ def data(db):
     c=Course(title='Math',direction='School',grade=7,level='Base');db.add(c);db.flush()
     groups=[Group(title='G1',course_id=c.id),Group(title='G2',course_id=c.id)];db.add_all(groups);db.flush()
     db.add_all([Membership(group_id=groups[0].id,user_id=users[1].id),Membership(group_id=groups[1].id,user_id=users[2].id)])
-    task=Task(title='Fraction',prompt='Find value',kind='fraction',answer='2/3',solution='SECRET_SOLUTION_742',status='ready');db.add(task);db.flush()
-    template=HomeworkTemplate(title='Reusable',task_ids=str(task.id));db.add(template);db.flush()
     db.commit()
-    return dict(admin=users[0],alice=users[1],bob=users[2],course=c,g1=groups[0],g2=groups[1],task=task,template=template)
+    return dict(admin=users[0],alice=users[1],bob=users[2],course=c,g1=groups[0],g2=groups[1])
 
 
 @pytest.fixture
@@ -69,7 +67,3 @@ def login(client,name):
     assert response.status_code==200, response.text
 
 
-def assignment(db,data,group=None,**kw):
-    from app.services import publish
-    values=dict(group_id=(group or data['g1']).id,template_id=data['template'].id,title='Work',opens_at=now()-timedelta(days=1),deadline=now()+timedelta(days=1),solutions_at=now()+timedelta(days=2),max_attempts=2,allow_late=False)
-    values.update(kw); a=Assignment(**values);publish(db,a);db.add(a);db.commit();return a

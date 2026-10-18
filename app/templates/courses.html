@@ -1,1 +1,8 @@
-{% extends 'base.html' %}{% block content %}<p class="eyebrow">УЧЕБНЫЕ МАТЕРИАЛЫ</p><h1>Мои курсы</h1><div class="cards">{% for c in courses %}<a class="card course-card" href="/courses/{{c.id}}"><span class="tag">{{c.direction}}</span><div class="course-number">{{c.grade or '∑'}}<small>класс</small></div><h2>{{c.title}}</h2><p>{{c.description}}</p><span>Открыть программу ↗</span></a>{% else %}<p>Преподаватель ещё не открыл доступ к курсам.</p>{% endfor %}</div>{% endblock %}
+{% extends 'base.html' %}{% block content %}
+<p class="eyebrow">УЧЕБНЫЕ МАТЕРИАЛЫ</p><h1>Курсы на Stepik</h1>
+<p class="lead">Теория, классная и домашняя работа находятся на Stepik. Здесь — ссылки на ваши курсы.</p>
+<div class="cards">{% for c in courses %}<article class="card"><span class="tag">{{c.grade or ''}} класс · {{c.level}}</span><h2>{{c.title}}</h2><p>{{c.description}}</p>
+{% if c.stepik_url %}<a class="button" href="{{c.stepik_url}}" target="_blank" rel="noopener noreferrer">Открыть курс на Stepik ↗</a>{% else %}<p class="muted">Ссылка появится, когда преподаватель подготовит курс.</p>{% endif %}
+{% if user.role=='admin' %}<p><a href="/admin/courses/{{c.id}}">Изменить описание и ссылку →</a></p>{% endif %}</article>{% else %}<div class="card">Курсы ещё не назначены.</div>{% endfor %}</div>
+<p class="muted">Для Stepik может потребоваться отдельный аккаунт. Результаты заданий автоматически на этот сайт не передаются.</p>
+{% endblock %}

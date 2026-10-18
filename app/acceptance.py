@@ -7,9 +7,11 @@ import json
 import os
 from pathlib import Path
 import re
+from io import BytesIO
 from sqlalchemy import select, func
 from .db import Base, Session, now
-from .models import User, Settings, File, Attempt, Ledger, Course, Assignment, Meeting
+from .models import User, Settings, File, Attendance, Meeting, MessageTemplate
+from .reports import weekly_report, ZONE
 from .security import hash_password
 from .services import balance
 
@@ -23,7 +25,7 @@ def create_fixture():
         raise RuntimeError('Set ALLOW_ACCEPTANCE_FIXTURE=1 only for a disposable installation.')
     with Session() as db:
         for table in Base.metadata.sorted_tables:
-            if db.scalar(select(func.count()).select_from(table)):
+            if table.name!='message_templates' and db.scalar(select(func.count()).select_from(table)):
                 raise RuntimeError('Acceptance fixture requires an entirely empty application database.')
         db.add(User(name='TEST ONLY - Teacher', email='restore-teacher@example.test', role='admin', password_hash=hash_password(PASSWORD)))
         db.add(Settings(id=1))
@@ -52,24 +54,27 @@ def create_fixture():
         student = create('students', {'name':'TEST ONLY - Student','email':EMAIL,'password':PASSWORD,'active':'on'})
         group = create('groups', {'title':'TEST ONLY - Group','course_id':course,'schedule':'Test only','status':'active'})
         create('memberships', {'group_id':group,'user_id':student,'active':'on'})
-        task_ids = []
-        examples = [('fraction','2/3','','4/6'),('number','3.5','','3,5'),('set','-2;2','','2;-2'),('single','7','4\n7\n9','7'),('multiple','2;4','2\n3\n4','2;4')]
-        for kind, answer, options, response in examples:
-            task_ids.append(create('tasks', {'title':'TEST ONLY - '+kind,'prompt':'Control question','kind':kind,'answer':answer,'options':options,'tolerance':'0','solution':'Control solution','grade':'7','status':'ready'}))
-        template = create('templates', {'title':'TEST ONLY - Homework','task_ids':','.join(map(str,task_ids))})
-        assignment = create('assignments', {'title':'TEST ONLY - Issuance','group_id':group,'template_id':template,'opens_at':(now()-timedelta(days=1)).isoformat(),'deadline':(now()+timedelta(days=1)).isoformat(),'solutions_at':(now()+timedelta(days=2)).isoformat(),'max_attempts':'3','status':'published'})
-        meeting = create('meetings', {'title':'TEST ONLY - Lesson','group_id':group,'audience':'all','starts_at':(now()-timedelta(hours=2)).isoformat(),'duration':'90','payment_mode':'subscription'})
+        meeting = create('meetings', {'title':'TEST ONLY - Lesson','group_id':group,'audience':'all','starts_at':(now()-timedelta(hours=2)).isoformat(),'duration':'90','payment_mode':'subscription','planned_topics':'Пропорции и проценты'})
         post('/billing/payment', {'user_id':student,'minutes':'480','amount':'0','reason':'TEST ONLY - not a real payment'})
+        post(f'/meetings/{meeting}/confirm', {'duration':'90',f'status_{student}':'present','reason':'TEST ONLY - attendance','action':'confirm','covered_topics':'Пропорции\nПроценты'})
+        post(f'/meetings/{meeting}/confirm', {'duration':'90',f'status_{student}':'present','reason':'TEST ONLY - repeat confirmation','action':'confirm','covered_topics':'Пропорции\nПроценты'})
+        with Session() as db:
+            # Simulate one pre-existing attachment: updates must preserve old files.
+            owner=db.scalar(select(User).where(User.email==EMAIL))
+            file=File(owner_id=owner.id,meeting_id=meeting,name='legacy-control.png',path='legacy-control',mime='image/png',size=len(IMAGE))
+            db.add(file);db.commit()
+            storage=Path(os.getenv('STORAGE_DIR','storage'));storage.mkdir(parents=True,exist_ok=True)
+            (storage/file.path).write_bytes(IMAGE)
         post('/logout')
         post('/login', {'email':EMAIL,'password':PASSWORD})
-        for index, (_,_,_,response) in enumerate(examples):
-            answers = response.split(';') if examples[index][0]=='multiple' else response
-            post(f'/homework/{assignment}/answer/{index}', {'answer':answers})
-        post('/files/upload', {'scope':'assignment','target':assignment}, files={'file':('control.png', IMAGE, 'image/png')})
-        post('/logout')
-        post('/login', {'email':'restore-teacher@example.test','password':PASSWORD})
-        post(f'/meetings/{meeting}/confirm', {'duration':'90',f'status_{student}':'present','reason':'TEST ONLY - attendance','action':'confirm'})
-        post(f'/meetings/{meeting}/confirm', {'duration':'90',f'status_{student}':'present','reason':'TEST ONLY - repeat confirmation','action':'confirm'})
+        report=client.get('/reports')
+        if report.status_code!=200 or 'Пропорции' not in report.text:
+            # Near a Monday boundary the lesson may be in the previous week.
+            with Session() as db:
+                date=db.get(Meeting,meeting).starts_at.astimezone(ZONE).date().isoformat()
+            report=client.get('/reports?week='+date)
+            if report.status_code!=200 or 'Пропорции' not in report.text:
+                raise RuntimeError('Student weekly report missing covered topics.')
     return fingerprint()
 
 
@@ -89,12 +94,13 @@ def fingerprint():
             path = Path(os.getenv('STORAGE_DIR','storage')) / file.path
             with path.open('rb') as stream:
                 files.append({'id':file.id, 'size':path.stat().st_size, 'sha256':hashlib.file_digest(stream,'sha256').hexdigest()})
-        attempts = [{'task':a.task_index,'answer':a.answer,'correct':a.correct} for a in db.scalars(select(Attempt).where(Attempt.user_id==user.id).order_by(Attempt.id))]
+        meeting=db.scalar(select(Meeting).where(Meeting.status=='held'))
+        report=weekly_report(db,user.id,meeting.starts_at.astimezone(ZONE).date().isoformat())
         minutes = balance(db,user.id)
-        if minutes!=390 or len(attempts)!=5 or not all(a['correct'] for a in attempts) or len(files)!=1:
-            raise RuntimeError('Unexpected acceptance result: balance, answers or files differ.')
+        if minutes!=390 or report['attended']!=1 or report['topics']!=['Пропорции','Проценты'] or len(files)!=1:
+            raise RuntimeError('Unexpected acceptance result: balance, weekly report or legacy files differ.')
         canonical = json.dumps(rows, default=lambda value:value.isoformat(), ensure_ascii=False, sort_keys=True, separators=(',',':')).encode('utf-8')
-        return {'balance_minutes':minutes,'attempts':attempts,'files':files,'table_counts':counts,'database_sha256':hashlib.sha256(canonical).hexdigest()}
+        return {'balance_minutes':minutes,'report':{'topics':report['topics'],'attended':report['attended'],'minutes':report['minutes']},'files':files,'table_counts':counts,'database_sha256':hashlib.sha256(canonical).hexdigest()}
 
 
 def check_download():
@@ -102,6 +108,7 @@ def check_download():
     from .main import app
     with Session() as db:
         file_id = db.scalar(select(File.id))
+        student_id = db.scalar(select(User.id).where(User.email==EMAIL))
     with TestClient(app) as client:
         page = client.get('/login')
         token = re.search(r'name="csrf" value="([^"]+)"',page.text)[1]
@@ -111,6 +118,7 @@ def check_download():
         response = client.get(f'/files/{file_id}')
         if response.status_code!=200 or response.content!=IMAGE:
             raise RuntimeError('Restored attachment download failed.')
+
 
 
 if __name__ == '__main__':

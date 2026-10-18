@@ -1,7 +1,7 @@
 import os
 from datetime import datetime, timezone
 from sqlalchemy import create_engine, event
-from sqlalchemy.orm import DeclarativeBase, sessionmaker
+from sqlalchemy.orm import DeclarativeBase, sessionmaker, Session as ORMSession, with_loader_criteria
 from sqlalchemy.types import TypeDecorator, DateTime
 
 
@@ -37,6 +37,14 @@ if url.startswith('sqlite'):
     def sqlite_fk(connection, _):
         connection.execute('PRAGMA foreign_keys=ON')
 Session = sessionmaker(engine, expire_on_commit=False)
+
+
+@event.listens_for(ORMSession, 'do_orm_execute')
+def hide_deleted(state):
+    if state.is_select and not state.execution_options.get('include_deleted', False):
+        from .models import SoftDelete
+        state.statement = state.statement.options(
+            with_loader_criteria(SoftDelete, lambda model: model.deleted == False, include_aliases=True))
 
 
 def get_db():
