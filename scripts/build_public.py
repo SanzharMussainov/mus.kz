@@ -1,4 +1,5 @@
 """Build the landing page without a database or running backend."""
+import sys
 import json
 import os
 import shutil
@@ -12,6 +13,8 @@ from zoneinfo import ZoneInfo
 from jinja2 import Environment, FileSystemLoader, select_autoescape
 
 ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(ROOT))
+from app.public_pages import page_data
 
 def build(cabinet_url, output=None):
     url=urlsplit(cabinet_url)
@@ -37,10 +40,15 @@ def build(cabinet_url, output=None):
     env.filters['date']=lambda value: datetime.fromisoformat(value).astimezone(ZoneInfo('Asia/Qyzylorda')).strftime('%d.%m.%Y · %H:%M') if value else '—'
     env.filters['label']=lambda value: {'subscription':'Из абонемента','separate':'Отдельная оплата','free':'Бесплатно'}.get(value,value)
     data['events']=[event for event in data['events'] if datetime.fromisoformat(event['starts_at'])>datetime.now(timezone.utc)]
-    html=env.get_template('home.html').render(**data,user=None,public_only=True,static_site=True,cabinet_login_url=login)
+    html=env.get_template('landing.html').render(**data,user=None,public_only=True,static_site=True,cabinet_login_url=login)
     output=Path(output or ROOT/'dist-public')
     output.mkdir(parents=True,exist_ok=True)
     (output/'index.html').write_text(html,encoding='utf-8')
+    for subject in ('math', 'russian'):
+        directory = output / subject
+        directory.mkdir(exist_ok=True)
+        page = env.get_template('home.html').render(settings=data['settings'], **page_data(data, subject), user=None, public_only=True, static_site=True, cabinet_login_url=login)
+        (directory / 'index.html').write_text(page, encoding='utf-8')
     # Copy only public assets, never app sources, configuration, or uploaded files.
     shutil.copytree(ROOT/'app/static',output/'static',dirs_exist_ok=True)
     (output/'robots.txt').write_text('User-agent: *\nAllow: /\n',encoding='utf-8')

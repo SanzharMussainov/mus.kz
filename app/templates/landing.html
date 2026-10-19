@@ -1,0 +1,10 @@
+{% extends 'base.html' %}
+{% block title %}MUS.KZ · Онлайн-занятия с преподавателями{% endblock %}
+{% block public %}
+<section class="section"><p class="eyebrow">ОНЛАЙН-ОБУЧЕНИЕ · MUS.KZ</p><h1>С пониманием.<br>С поддержкой.</h1><p class="lead">Математика, программирование, русский язык и начальная школа. Выберите направление и познакомьтесь с вашим преподавателем.</p>
+<div class="teachers-grid">
+<article class="card"><img class="teacher-photo" src="/static/teacher.jpg" alt="Санжар Русланович"><span class="tag">Опыт более 4 лет</span><h2>Математика и программирование</h2><h3>Санжар Русланович</h3><p>Разбираем сложные темы, решаем задачи и учимся мыслить самостоятельно.</p><a class="button" href="/math/">Выбрать направление ↗</a></article>
+<article class="card"><img class="teacher-photo teacher-photo-aigul" src="/static/teacher-aigul.jpg" alt="Айгуль Келдыбаевна"><span class="tag">Опыт более 20 лет</span><h2>Русский язык и начальная школа</h2><h3>Айгуль Келдыбаевна</h3><p>Русский язык и литература, начальная школа, подготовка к школе. Занятия для детей и взрослых.</p><a class="button" href="/russian/">Выбрать направление ↗</a></article>
+</div></section><section class="section"><h2>Будем на связи</h2><p>Отзывы, набор в группы и вопросы об обучении — в нашем сообществе.</p><a class="button outline" href="https://t.me/+XStYs5VgwLRmOTcy" target="_blank" rel="noopener noreferrer">Перейти в Telegram ↗</a></section>
+<section class="section"><p class="eyebrow">ДОПОЛНИТЕЛЬНЫЕ ВСТРЕЧИ</p><h2>Разберём важное</h2><div class="cards">{% for e in events %}<article class="card"><span class="tag">{{e.payment_mode|label}}</span><h3>{{e.title}}</h3><p>{{e.description}}</p><p>{{e.starts_at|date}} · {{e.duration}} мин</p><a href="{{'/meetings/' ~ e.id if user else cabinet_login_url|default('/login')}}">{{'Подробнее' if user else 'Войти для записи'}} ↗</a><p class="muted">{{'Запись доступна ученикам выбранной аудитории.' if e.audience=='selected' else 'Для всех учеников.'}}</p></article>{% else %}<p>Расписание консультаций и подготовки к СОР / СОЧ появится здесь.</p>{% endfor %}</div></section>
+{% endblock %}

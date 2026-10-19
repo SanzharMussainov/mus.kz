@@ -24,3 +24,5 @@ a:focus-visible,button:focus-visible{outline:3px solid #267ca8;outline-offset:3p
 .telegram-card{align-self:center}.telegram-card h3{font-size:27px;color:#153f59}.telegram-card .muted{margin:20px 0 0}.telegram-card .eyebrow{font-size:11px}
 
 .teachers-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:28px;align-items:start}.teachers-grid .teacher-photo{height:460px;object-position:center 45%}.teachers-grid .teacher-photo-aigul{object-position:center 43%}.teachers-grid h3{margin-top:18px}@media(max-width:700px){.teachers-grid{grid-template-columns:1fr}.teachers-grid .teacher-photo{height:400px}}
+
+.teachers-grid.single-teacher{grid-template-columns:minmax(0,760px);justify-content:center}

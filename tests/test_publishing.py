@@ -31,7 +31,7 @@ def test_build_loads_current_public_data(client,db,data,tmp_path,monkeypatch):
     monkeypatch.setenv('PUBLIC_CONTENT_URL','https://cabinet.example/public-content.json')
     monkeypatch.setattr('scripts.build_public.urlopen',lambda *a,**kw:BytesIO(payload))
     build('https://cabinet.example',tmp_path)
-    assert 'Fresh public headline' in (tmp_path/'index.html').read_text(encoding='utf-8')
+    assert 'Fresh public headline' in (tmp_path/'math'/'index.html').read_text(encoding='utf-8')
 
 
 def test_hook_not_configured_does_not_report_success(client,data,monkeypatch):

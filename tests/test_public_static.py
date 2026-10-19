@@ -32,3 +32,20 @@ def test_static_build_has_no_backend_requests(tmp_path,monkeypatch):
     assert not (output/'.env').exists()
     with pytest.raises(ValueError): build('https://user:secret@example.com',tmp_path)
     with pytest.raises(ValueError): build('',tmp_path)
+
+
+def test_subject_pages(client, db, data, tmp_path, monkeypatch):
+    from app.public_pages import page_data
+    sample = dict(courses=[dict(title='Algebra', direction='Математика'), dict(title='Reading', direction='Русский язык')], groups=[dict(title='M', direction='Математика'), dict(title='R', direction='Русский язык')])
+    assert [g['title'] for g in page_data(sample, 'math')['groups']] == ['M']
+    assert [c['title'] for c in page_data(sample, 'russian')['courses']] == ['Reading']
+    for route in ('/', '/math/', '/russian/'):
+        assert client.get(route).status_code == 200
+    monkeypatch.delenv('PUBLIC_CONTENT_URL', raising=False)
+    build('https://cabinet.example.com', tmp_path)
+    math = (tmp_path/'math/index.html').read_text(encoding='utf-8')
+    russian = (tmp_path/'russian/index.html').read_text(encoding='utf-8')
+    assert 'https://wa.me/77771102585' in math and 'https://wa.me/77012562010' not in math
+    assert 'https://wa.me/77012562010' in russian and 'https://wa.me/77771102585' not in russian
+    assert 'user-193042/' in math and 'user-209560/' not in math
+    assert 'user-209560/' in russian and 'user-193042/' not in russian

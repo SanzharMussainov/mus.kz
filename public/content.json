@@ -24,7 +24,8 @@
       "ends_at": "2026-10-29T08:00:00+00:00",
       "hourly_price": 3500,
       "min_students": 2,
-      "max_students": 5
+      "max_students": 5,
+      "direction": "Школьная математика"
     }
   ],
   "events": []

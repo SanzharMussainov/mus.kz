@@ -14,7 +14,7 @@ def export(db):
     events=db.scalars(select(Meeting).where(Meeting.is_event==True,Meeting.public==True,Meeting.status=='scheduled',Meeting.starts_at>now()).order_by(Meeting.starts_at)).all()
     return dict(settings=fields(settings,'title headline about teacher contact whatsapp'),
         courses=[fields(c,'title description direction grade level') for c in courses],
-        groups=[fields(g,'title schedule starts_at ends_at hourly_price min_students max_students') for g in groups],
+        groups=[dict(fields(g,'title schedule starts_at ends_at hourly_price min_students max_students'), direction=next(c.direction for c in courses if c.id == g.course_id)) for g in groups],
         events=[fields(e,'title description starts_at duration payment_mode audience') for e in events])
 
 if __name__=='__main__':

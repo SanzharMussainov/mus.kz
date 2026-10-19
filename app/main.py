@@ -95,7 +95,19 @@ def localdate(value):
 
 @app.get('/')
 def home(request: Request, db=Depends(get_db)):
-    return render(request, db, 'home.html', public_only=True, courses=db.scalars(select(Course).where(Course.public == True)).all(), groups=db.scalars(select(Group).where(Group.status == 'recruiting', Group.course_id.in_(select(Course.id).where(Course.public == True)))).all(), events=db.scalars(select(Meeting).where(Meeting.is_event == True, Meeting.public == True, Meeting.status == 'scheduled', Meeting.starts_at > now()).order_by(Meeting.starts_at)).all())
+    return render(request, db, 'landing.html', public_only=True, events=export_public(db)['events'])
+
+
+@app.get('/math/')
+def math_page(request: Request, db=Depends(get_db)):
+    from .public_pages import page_data
+    return render(request, db, 'home.html', public_only=True, **page_data(export_public(db), 'math'))
+
+
+@app.get('/russian/')
+def russian_page(request: Request, db=Depends(get_db)):
+    from .public_pages import page_data
+    return render(request, db, 'home.html', public_only=True, **page_data(export_public(db), 'russian'))
 
 
 @app.post('/apply')
