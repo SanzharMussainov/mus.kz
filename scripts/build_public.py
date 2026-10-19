@@ -47,4 +47,4 @@ def build(cabinet_url, output=None):
     return output
 
 if __name__=='__main__':
-    print(build(os.environ.get('CABINET_URL','https://mus-kz-admin.onrender.com')))
+    print(build(os.environ.get('CABINET_URL','https://mus-kz.onrender.com')))
