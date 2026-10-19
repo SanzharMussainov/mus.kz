@@ -19,6 +19,8 @@ from .admin import SPECS, LABELS
 from .reports import weekly_report, week_start
 from .messages import validate_template, message_context
 from .deletion import DELETABLE, remove, restore
+from .export_public import export as export_public
+from .publishing import trigger_public_deploy
 
 ROOT = Path(__file__).parent
 ZONE = ZoneInfo('Asia/Qyzylorda')
@@ -509,3 +511,21 @@ def download(pk:int,request:Request,inline:bool=False,db=Depends(get_db)):
     path=Path(os.getenv('STORAGE_DIR','storage'))/f.path
     if not path.is_file(): raise HTTPException(404,'Файл отсутствует в хранилище.')
     return FileResponse(path,filename=f.name,media_type=f.mime,content_disposition_type='inline' if inline and f.mime in ('image/png','image/jpeg') else 'attachment',headers={'Cache-Control':'private, no-store'})
+
+
+@app.get('/public-content.json')
+def public_content(db=Depends(get_db)):
+    return export_public(db)
+
+
+@app.post('/admin/publish-public')
+async def publish_public(request:Request,db=Depends(get_db)):
+    require_user(request,db,True)
+    form=await request.form();check_csrf(request,form)
+    last=request.session.get('public_publish_at',0)
+    if now().timestamp()-last<60:
+        raise ValueError('Публикация уже запрошена. Подождите минуту перед повторным запуском.')
+    await trigger_public_deploy()
+    request.session['public_publish_at']=now().timestamp()
+    request.session['success_message']='Публикация запущена. Главная обновится после успешной сборки Render. Обычно это занимает несколько минут; статус смотрите в Render → Events.'
+    return redirect('/dashboard')

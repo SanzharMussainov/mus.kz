@@ -10,7 +10,7 @@
 4. Build Command: `pip install -r requirements-static.txt && python scripts/build_public.py`
 5. Publish Directory: `dist-public`
 6. Environment: `CABINET_URL=https://mus-kz.onrender.com` (без /login).
-7. Не добавлять DATABASE_URL, SECRET_KEY и другие секреты кабинета в статический сервис.
+7. Добавить `SKIP_INSTALL_DEPS=true`: иначе Render автоматически установит корневой requirements.txt с зависимостями кабинета до нашей команды сборки. Не добавлять DATABASE_URL, SECRET_KEY и другие секреты кабинета в статический сервис.
 8. Создать сервис и проверить главную, фото, контакты и кнопку входа. Новый адрес распространять среди родителей. Старый адрес оставить для кабинета. Не удалять Web Service и Neon.
 
 ## Обновление публичных сведений
@@ -26,3 +26,19 @@
 ## Локальная проверка
 
 Установить requirements-static.txt, задать CABINET_URL и выполнить `python scripts/build_public.py`. Затем `python -m http.server 8081 --directory dist-public` и открыть http://localhost:8081. Главная должна работать при остановленном backend.
+
+
+## Публикация из кабинета (19 октября)
+
+Теперь JSON можно получать при сборке с публичного endpoint кабинета. Это список разрешённых полей главной страницы; студенты, оплаты, пароли и Meet-ссылки туда не входят. Посетители статического сайта не обращаются к кабинету. Если источник недоступен, сборка завершается ошибкой, а старая версия сайта остаётся доступной.
+
+Настройки Static Site:
+- SKIP_INSTALL_DEPS=true
+- CABINET_URL=https://mus-kz-admin.onrender.com
+- PUBLIC_CONTENT_URL=https://mus-kz-admin.onrender.com/public-content.json
+- Build: pip install -r requirements-static.txt && python scripts/build_public.py
+- Publish Directory: dist-public
+
+В Settings статического сайта скопировать Deploy Hook. В Environment сервиса кабинета добавить PUBLIC_DEPLOY_HOOK с этим полным секретным URL. Не коммитить и не отправлять его в чат. Перезапустить кабинет. На странице «Обзор» появилась кнопка «Опубликовать изменения на главной». Успешное сообщение подтверждает принятие запроса Render, а не завершение сборки. Результат сборки смотреть в Events статического сайта. При отсутствии PUBLIC_CONTENT_URL используется прежний локальный public/content.json; для синхронизации обязательно установить переменную.
+
+Желаемые адреса: публичный mus-kz.onrender.com, кабинет mus-kz-admin.onrender.com. Изменение имён сервисов выполняется в Render, не в коде. Сначала изменить имя Web Service на mus-kz-admin и проверить фактически выданный URL, затем Static Site на mus-kz и проверить его URL. Переименование может не перенести точный старый поддомен — не удалять сервисы ради освобождения адреса. Если Render сохраняет старый URL или добавляет суффикс, обратиться в Render Support за переносом поддомена. Переменные всегда должны содержать фактически работающий адрес кабинета. База Neon остаётся прежней.

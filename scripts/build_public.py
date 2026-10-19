@@ -2,6 +2,9 @@
 import json
 import os
 import shutil
+import time
+from urllib.request import urlopen
+from urllib.error import URLError
 from datetime import datetime, timezone
 from pathlib import Path
 from urllib.parse import urlsplit
@@ -15,7 +18,21 @@ def build(cabinet_url, output=None):
     if url.scheme != 'https' or not url.hostname or url.username or url.password or url.query or url.fragment or url.path not in ('','/'):
         raise ValueError('CABINET_URL must be the HTTPS origin of your Render web service, without a path or credentials.')
     login=cabinet_url.rstrip('/')+'/login'
-    data=json.loads((ROOT/'public/content.json').read_text(encoding='utf-8'))
+    source=os.environ.get('PUBLIC_CONTENT_URL','').strip()
+    if source:
+        parsed=urlsplit(source)
+        if parsed.scheme!='https' or not parsed.hostname or parsed.username or parsed.password or parsed.query or parsed.fragment:
+            raise ValueError('PUBLIC_CONTENT_URL must be a public HTTPS URL without secrets.')
+        for attempt in range(4):
+            try:
+                with urlopen(source,timeout=45) as response:
+                    data=json.load(response)
+                break
+            except (URLError,TimeoutError):
+                if attempt==3: raise RuntimeError('Public content endpoint unavailable; deployment stopped, previous site remains live.') from None
+                time.sleep(5)
+    else:
+        data=json.loads((ROOT/'public/content.json').read_text(encoding='utf-8'))
     env=Environment(loader=FileSystemLoader(ROOT/'app/templates'),autoescape=select_autoescape(['html']))
     env.filters['date']=lambda value: datetime.fromisoformat(value).astimezone(ZoneInfo('Asia/Qyzylorda')).strftime('%d.%m.%Y · %H:%M') if value else '—'
     env.filters['label']=lambda value: {'subscription':'Из абонемента','separate':'Отдельная оплата','free':'Бесплатно'}.get(value,value)
@@ -30,4 +47,4 @@ def build(cabinet_url, output=None):
     return output
 
 if __name__=='__main__':
-    print(build(os.environ.get('CABINET_URL','https://mus-kz.onrender.com')))
+    print(build(os.environ.get('CABINET_URL','https://mus-kz-admin.onrender.com')))
