@@ -26,3 +26,35 @@ a:focus-visible,button:focus-visible{outline:3px solid #267ca8;outline-offset:3p
 .teachers-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:28px;align-items:start}.teachers-grid .teacher-photo{height:460px;object-position:center 45%}.teachers-grid .teacher-photo-aigul{object-position:center 43%}.teachers-grid h3{margin-top:18px}@media(max-width:700px){.teachers-grid{grid-template-columns:1fr}.teachers-grid .teacher-photo{height:400px}}
 
 .teachers-grid.single-teacher{grid-template-columns:minmax(0,760px);justify-content:center}
+
+/* Public subject palettes; cabinet styling stays independent. */
+.public-site{--subject:#204b93;--wash:#e8f0fc;--accent:#c45322;background:#edf3fc;color:#172d4d}
+.public-site.theme-russian{--subject:#31594b;--wash:#e9eee3;--accent:#ad482b;background:#faf1e3;color:#293d34}
+.public-site .topbar{background:var(--wash);border-bottom:1px solid #00000010}
+.public-site main>.section:nth-child(even){background:var(--wash);border-radius:28px}
+.public-site .hero{background:radial-gradient(ellipse at 90% 10%,#f6c59b80,transparent 55%)}
+.public-site h1,.public-site h2,.public-site h3{color:var(--subject)}
+.public-site .eyebrow,.public-site .quiet-link{color:var(--subject)}
+.public-site .card{background:#ffffffd9;border-color:#ffffff;box-shadow:0 12px 32px #203e6510}
+.public-site .button{background:var(--accent);color:white;border-color:var(--accent);transition:transform .2s,box-shadow .2s}
+.public-site .button.outline{background:transparent;color:var(--subject);border-color:var(--subject)}
+.public-site .tag{background:var(--wash);color:var(--subject)}
+.public-site footer{background:var(--subject);color:white}
+.public-site footer .brand{color:white}
+.theme-math .math-board{background:#173e79;color:#fff;box-shadow:16px 16px 0 #edaa68}
+.theme-math .math-board .formula,.theme-math .board-top,.theme-math .board-note{color:white}
+.theme-math .board-star{color:#ffbd75;animation:gentle-float 7s ease-in-out infinite}
+.theme-math .formula-one{animation:gentle-float 9s ease-in-out infinite reverse}
+.theme-math .curve{animation:draw-curve 1.6s ease-out both}
+.theme-russian h1,.theme-russian h2{font-family:Georgia,'Times New Roman',serif;font-weight:600}
+.theme-russian .language-board{position:relative;overflow:hidden;padding:100px 36px 50px;background:#31594b;color:#fff8e8;border:0;border-radius:80px 12px 80px 12px;box-shadow:16px 16px 0 #e6ba8c}
+.theme-russian .language-board h2,.theme-russian .language-board p,.theme-russian .language-board a{color:#fff8e8;position:relative}
+.floating-letter,.floating-quote{position:absolute;font-family:Georgia,serif;color:#e8c18f;font-size:64px;top:10px;left:32px;animation:gentle-float 8s ease-in-out infinite}
+.floating-quote{left:auto;right:30px;animation-delay:-4s}
+.public-site .reveal-pending{opacity:0;transform:translateY(22px)}
+.public-site .reveal-visible{opacity:1;transform:translateY(0);transition:opacity .65s ease,transform .65s ease}
+@keyframes gentle-float{0%,100%{translate:0 0;rotate:-2deg}50%{translate:0 -10px;rotate:2deg}}
+@keyframes draw-curve{from{clip-path:inset(0 100% 0 0)}to{clip-path:inset(0)}}
+@media(hover:hover){.public-site .button:hover{transform:translateY(-3px);box-shadow:0 8px 20px #203e6526}.public-site .course-card:hover{box-shadow:0 16px 36px #203e6526}}
+@media(max-width:700px){.public-site main>.section:nth-child(even){border-radius:18px}.theme-math .math-board,.theme-russian .language-board{box-shadow:6px 6px 0 #e6ba8c}.theme-russian .language-board{padding:85px 24px 32px}.floating-letter,.floating-quote{font-size:48px}}
+@media(prefers-reduced-motion:reduce){.public-site *, .public-site *::before,.public-site *::after{animation:none!important;transition:none!important;scroll-behavior:auto!important}.public-site .reveal-pending{opacity:1;transform:none}}

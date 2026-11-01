@@ -63,3 +63,31 @@ document.addEventListener('submit', async event => {
 });
 
 document.addEventListener('click',event=>{const button=event.target.closest('[data-dismiss-notice]');if(button)button.closest('.success-notice')?.remove();});
+
+// Reveal only off-screen public content. Without JS everything stays visible.
+(() => {
+  if (!document.body.classList.contains('public-site') || !('IntersectionObserver' in window)) return;
+  const motion = matchMedia('(prefers-reduced-motion: reduce)');
+  if (motion.matches) return;
+  const observer = new IntersectionObserver(entries => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        entry.target.classList.remove('reveal-pending');
+        entry.target.classList.add('reveal-visible');
+        observer.unobserve(entry.target);
+      }
+    });
+  }, {threshold: 0, rootMargin: '0px 0px -30px 0px'});
+  document.querySelectorAll('main > .section, main .course-card').forEach(element => {
+    if (element.getBoundingClientRect().top > innerHeight) {
+      element.classList.add('reveal-pending');
+      observer.observe(element);
+    }
+  });
+  motion.addEventListener('change', () => {
+    if (motion.matches) {
+      observer.disconnect();
+      document.querySelectorAll('.reveal-pending').forEach(el => el.classList.remove('reveal-pending'));
+    }
+  });
+})();
