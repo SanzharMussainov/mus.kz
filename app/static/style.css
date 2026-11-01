@@ -58,3 +58,13 @@ a:focus-visible,button:focus-visible{outline:3px solid #267ca8;outline-offset:3p
 @media(hover:hover){.public-site .button:hover{transform:translateY(-3px);box-shadow:0 8px 20px #203e6526}.public-site .course-card:hover{box-shadow:0 16px 36px #203e6526}}
 @media(max-width:700px){.public-site main>.section:nth-child(even){border-radius:18px}.theme-math .math-board,.theme-russian .language-board{box-shadow:6px 6px 0 #e6ba8c}.theme-russian .language-board{padding:85px 24px 32px}.floating-letter,.floating-quote{font-size:48px}}
 @media(prefers-reduced-motion:reduce){.public-site *, .public-site *::before,.public-site *::after{animation:none!important;transition:none!important;scroll-behavior:auto!important}.public-site .reveal-pending{opacity:1;transform:none}}
+
+/* Locally hosted Cyrillic educational typography. */
+body{font-family:'Golos Text','Segoe UI',Arial,sans-serif}
+.public-site h1,.public-site h2,.public-site h3{font-family:'Golos Text','Segoe UI',Arial,sans-serif;font-weight:700;letter-spacing:-.035em}
+.public-site p{line-height:1.8}
+.theme-russian h1,.theme-russian h2,.theme-russian .floating-letter,.theme-russian .floating-quote{font-family:'Lora',Georgia,serif;letter-spacing:-.025em;font-weight:600}
+.public-site .brand{font-family:'Golos Text',sans-serif;font-weight:800}
+.public-site .eyebrow{font-weight:600;letter-spacing:.14em}
+
+.theme-math .formula-two em{color:#ffbd75}
